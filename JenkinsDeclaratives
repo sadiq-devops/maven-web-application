@@ -1,1 +1,63 @@
+pipeline{
+agent any
+triggers{
+pollSCM('* * * * *')
+}
 
+options{
+buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '5', numToKeepStr: '5'))
+}
+
+tools{
+maven "maven3.6.3"
+}
+stages{
+stage('CheckoutCode'){
+steps{git branch: 'development', credentialsId: '769b2f7b-9c14-498d-81b5-25f52d45c911', url: 'https://github.com/sadiq-devops/maven-web-application.git'
+}
+}
+
+stage('Build'){
+steps{ sh "mvn clean package"
+}
+}
+
+stage('ExecuteSonarqubeReport'){
+steps{ sh "mvn clean sonar:sonar"
+}
+}
+
+stage('UploadArifactRepository'){
+steps{ sh "mvn clean deploy"
+}
+}
+
+stage('Depl0yintoTomcat'){
+steps{
+deploy adapters: [tomcat9(credentialsId: 'e8407494-1b5f-4beb-b7d5-813b668484ca', path: '', url: 'http://localhost:9080/')], contextPath: null, onFailure: false, war: '**/maven-web-application.war'
+}
+}
+
+} // Stages completed
+
+post{
+
+success{ emailext body: '''Build is over!!!---Success-----!!!!!
+
+Regards
+Sadiq''', subject: 'Build is over', to: 'jareena157@outlook.com'
+
+}
+
+failure{ emailext body: '''Build is over!!!----Failure........
+
+Regards
+Sadiq''', subject: 'Build is over', to: 'jareena157@outlook.com'
+
+}
+
+
+}
+
+
+}
